@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pagina con script</title>
+  <style>
+    /* Stile base per il contenitore e le parti */
+    #resizableContainer {
+      display: flex;
+      flex-direction: column;
+      height: 90vh;
+      border: 1px solid #333;
+      margin: 20px;
+    }
+
+    #topPane {
+      background-color: #f0f0f0;
+      height: 80%;
+      transition: height 0.2s;
+      overflow: auto;
+      padding: 10px;
+    }
+
+    #dragger {
+      background-color: #666;
+      height: 8px;
+      cursor: ns-resize;
+    }
+
+    #bottomPane {
+      background-color: #ddd;
+      height: 20%;
+      display: flex;
+      flex-direction: row;
+      overflow: hidden;
+      padding: 10px;
+    }
+
+    #team-photos-grid {
+      flex: 1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      overflow-y: auto;
+    }
+
+    #team-photos-grid img {
+      width: 60px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 5px;
+      border: 2px solid #999;
+    }
+
+    #step-photos-carousel {
+      flex: 2;
+      overflow-x: hidden;
+      white-space: nowrap;
+      margin-left: 15px;
+      border: 1px solid #aaa;
+      padding: 5px;
+      display: flex;
+      align-items: center;
+    }
+
+    #step-photos-carousel img {
+      width: 100px;
+      height: 100px;
+      object-fit: cover;
+      margin-right: 10px;
+      border-radius: 5px;
+      border: 2px solid #999;
+      display: inline-block;
+    }
+  </style>
+</head>
+<body>
+  <h1>Pagina con script e ridimensionamento</h1>
+
+  <div id="resizableContainer">
+    <div id="topPane">
+      <!-- Puoi inserire contenuti qui sopra -->
+      <p>Contenuto della parte superiore</p>
+    </div>
+
+    <div id="dragger"></div>
+
+    <div id="bottomPane">
+      <div id="team-photos-grid"></div>
+      <div id="step-photos-carousel"></div>
+    </div>
+  </div>
+
+<script src="nuovoScript.js"></script>
+</body>
+</html>
