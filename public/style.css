@@ -1,0 +1,256 @@
+/* public/style.css */
+
+/* --- Colori e Font di Base --- */
+:root {
+    --squid-red: #bb0000; /* Rosso scuro iconico */
+    --squid-dark: #1a1a1a; /* Quasi nero */
+    --squid-light-grey: #f0f0f0; /* Grigio chiaro per i testi */
+    --squid-accent-green: #008080; /* Verde acqua per accenti (es. dragger) */
+    --text-color: var(--squid-light-grey);
+    --bg-color-top: var(--squid-dark);
+    --bg-color-bottom: #252525; /* Un po' più chiaro del nero per differenziare */
+}
+
+body {
+    font-family: 'Arial', sans-serif; /* Un font semplice che si adatta a diversi stili */
+    margin: 0;
+    overflow: hidden; /* Evita scroll indesiderati del body */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: var(--squid-red); /* Sfondo principale della pagina */
+    color: var(--text-color);
+}
+
+/* --- Titolo della Pagina --- */
+.main-title {
+    text-align: center;
+    color: var(--squid-light-grey);
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+    margin-bottom: 20px;
+    font-size: 2.5em;
+    padding-top: 15px;
+    letter-spacing: 2px;
+}
+
+/* --- Contenitori Principali --- */
+#resizableContainer {
+    width: 80%; /* ALLARGATO AL 90% */
+    height: 90vh;
+    /*max-width: 1200px; /* Limita la larghezza massima per estetica, se desiderato */
+    border: 5px solid var(--squid-red);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    background-color: var(--squid-dark);
+}
+
+#topPane {
+    background-color: var(--bg-color-top);
+    display: flex;
+    flex-direction: column; /* Per impilare titolo e griglia */
+    align-items: center; /* Centra il contenuto orizzontalmente */
+    padding: 10px;
+    box-sizing: border-box; /* Include padding nel calcolo altezza */
+    border-bottom: 2px solid var(--squid-red); /* Separatore */
+}
+
+#bottomPane {
+    background-color: var(--bg-color-bottom);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px 0; /* Padding orizzontale per il carosello */
+    box-sizing: border-box;
+    border-top: 2px solid var(--squid-red); /* Separatore */
+}
+
+/* --- Dragger --- */
+#dragger {
+    height: 10px;
+    background-color: var(--squid-accent-green); /* Colore accento per il dragger */
+    cursor: ns-resize;
+    position: relative;
+    z-index: 100;
+    border-top: 1px solid var(--squid-red);
+    border-bottom: 1px solid var(--squid-red);
+}
+
+#dragger::before {
+    content: '|||'; /* Simbolo per indicare che è trascinabile */
+    display: block;
+    text-align: center;
+    color: var(--squid-light-grey);
+    font-size: 0.8em;
+    line-height: 10px;
+}
+
+
+/* --- Griglia Foto Squadre --- */
+#team-photos-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 15px;
+    padding: 15px;
+    overflow-y: auto;
+    flex-grow: 1; /* Permette alla griglia di espandersi e occupare lo spazio rimanente */
+}
+
+#team-photos-grid .photo-item {
+    margin: 0;
+    flex-shrink: 0;
+    position: relative;
+    border: 2px solid var(--squid-red); /* Bordo rosso per le foto */
+    border-radius: 5px; /* Bordi leggermente arrotondati */
+    overflow: hidden; /* Nasconde ciò che esce dai bordi arrotondati */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+    transition: transform 0.2s ease-in-out; /* Effetto hover */
+}
+
+#team-photos-grid .photo-item:hover {
+    transform: scale(1.05); /* Zoom leggero al passaggio del mouse */
+}
+
+#team-photos-grid .photo-item img {
+    display: block; /* Rimuove lo spazio extra sotto l'immagine */
+    object-fit: cover; /* Assicura che l'immagine copra l'area senza distorcere */
+    /* Le dimensioni sono gestite da JS, qui solo per display */
+}
+
+#team-photos-grid .team-name {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: rgba(0, 0, 0, 0.7); /* Sfondo semi-trasparente */
+    color: var(--squid-light-grey);
+    padding: 5px 0;
+    text-align: center;
+    font-size: 0.9em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; /* Aggiunge "..." se il nome è troppo lungo */
+}
+
+#team-photos-grid .invalid-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 0, 0, 0.5); /* Rosso semi-trasparente */
+    color: white;
+    font-size: 3em;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+#team-photos-grid .grayscale img {
+    filter: grayscale(100%);
+}
+
+/* --- Carosello Foto Step (Bottom Pane) --- */
+.step-photos-carousel-container {
+    overflow: hidden;
+    white-space: nowrap;
+    position: relative;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    /* Immagini accessorie per il carosello */
+    background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/Squid_Game_logo.svg/1200px-Squid_Game_logo.svg.png'); /* Logo Squid Game (esempio) */
+    background-repeat: no-repeat;
+    background-size: contain; /* Adatta l'immagine mantenendo proporzioni */
+    background-position: center left; /* Posiziona a sinistra del carosello */
+    background-color: var(--bg-color-bottom); /* Sfondo per sicurezza */
+}
+
+.step-photos-carousel {
+    display: inline-flex;
+    animation: scroll-left var(--scroll-duration) linear infinite;
+    padding-right: 20px;
+    height: 100%;
+    align-items: center;
+    margin-left: 100px; /* Spazio per l'immagine accessoria */
+}
+
+.step-photos-carousel.paused {
+    animation-play-state: paused;
+}
+
+.step-photos-carousel .photo-item {
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 15px;
+    border: 2px solid var(--squid-accent-green); /* Bordo verde per le foto step */
+    border-radius: 5px;
+    overflow: hidden;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+.step-photos-carousel .photo-item img {
+    display: block;
+    object-fit: cover;
+}
+
+@keyframes scroll-left {
+    from {
+        transform: translateX(0);
+    }
+    to {
+        transform: translateX(-50%);
+    }
+}
+
+/* Media Queries per la Responsività (opzionale, ma consigliato) */
+@media (max-width: 768px) {
+    .main-title {
+        font-size: 1.8em;
+    }
+    #resizableContainer {
+        width: 98%;
+        height: 98vh;
+    }
+    #team-photos-grid, #step-photos-carousel .photo-item {
+        gap: 10px;
+    }
+    .step-photos-carousel {
+        margin-left: 50px; /* Ridotto spazio per l'immagine accessoria su schermi piccoli */
+    }
+}
+
+/* public/style.css */
+
+/* ... il tuo CSS esistente ... */
+
+/* Stili per le immagini dei tizi mascherati */
+.squid-guard {
+    position: fixed; /* Rende l'immagine fissa rispetto alla viewport */
+    top: 50%; /* Inizia a metà dell'altezza verticale */
+    transform: translateY(-50%); /* Centra l'immagine verticalmente */
+    width: 150px; /* Larghezza fissa per le immagini */
+    height: auto; /* Mantiene le proporzioni */
+    z-index: -1; /* Mette le immagini dietro il contenuto principale */
+    opacity: 0.7; /* Leggermente trasparenti per non distrarre troppo */
+}
+
+.squid-guard.left {
+    left: 2%; /* Posiziona a sinistra */
+}
+
+.squid-guard.right {
+    right: 2%; /* Posiziona a destra */
+}
+
+/* Media Queries per la Responsività: Nascondi le immagini su schermi piccoli */
+@media (max-width: 1024px) {
+    .squid-guard {
+        display: none; /* Nasconde le immagini dei tizi mascherati su schermi più piccoli */
+    }
+}

@@ -1,0 +1,45 @@
+require('dotenv').config();
+const express = require('express');
+const axios = require('axios');
+const app = express();
+const port = process.env.PORT || 3000;
+
+const GOOGLE_SHEET_ID = process.env.GOOGLE_SHEET_ID;
+const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
+
+// Servire i file statici dalla cartella public
+app.use(express.static('public'));
+
+// Endpoint per ottenere i dati dal Google Sheet
+app.get('/api/sheet-data', async (req, res) => {
+  try {
+    const range = 'Foglio1!A:J'; // Specifica il range delle colonne che ti interessano
+    const response = await axios.get(
+      `https://sheets.googleapis.com/v4/spreadsheets/${GOOGLE_SHEET_ID}/values/${range}?key=${GOOGLE_API_KEY}`
+    );
+
+    const rows = response.data.values;
+    if (!rows || rows.length === 0) {
+      return res.json([]);
+    }
+
+    // Assumiamo che la prima riga sia l'intestazione
+    const headers = rows[0];
+    const data = rows.slice(1).map(row => {
+      let rowObject = {};
+      headers.forEach((header, index) => {
+        rowObject[header] = row[index] || ''; // Assegna un valore vuoto se la cella è vuota
+      });
+      return rowObject;
+    });
+
+    res.json(data);
+  } catch (error) {
+    console.error('Errore durante il recupero dei dati del foglio:', error.message);
+    res.status(500).json({ error: 'Impossibile recuperare i dati del foglio.' });
+  }
+});
+
+app.listen(port, () => {
+  console.log(`Server listening at http://localhost:${port}`);
+});

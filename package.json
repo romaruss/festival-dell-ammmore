@@ -1,0 +1,17 @@
+{
+  "name": "google-sheet-photo-viewer",
+  "version": "1.0.0",
+  "description": "Una pagina web per visualizzare foto da Google Drive basate su un Google Sheet.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "axios": "^1.7.2",
+    "dotenv": "^16.4.5"
+  },
+  "engines": {
+    "node": "16.x"
+  }
+}
