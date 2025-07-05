@@ -164,7 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const fotoSquadraId = row.FotoSquadra;
                 const nomeSquadra = row.NomeSquadra;
 
-                const isInGiocoEliminato = row.InGioco && row.InGioco.toLowerCase();
+                const isInGiocoEliminato = row.ColonnaA && row.ColonnaA.toLowerCase();
                 const isEliminated = isInGiocoEliminato === 'eliminato';
 
                 // Passiamo TEAM_PHOTO_SHORT_SIDE_PX per le foto squadra
@@ -179,9 +179,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Pre-popola il carosello con le foto step valide
             data.forEach(row => {
-                for (let i = 2; i <= 4; i++) {
-                    const stepColumn = `Prova{i}`;
-                    const stepValidColumn = `Prova{i}_valid`;
+                for (let i = 1; i <= 5; i++) {
+                    const stepColumn = `Prova${i}`;
+                    const stepValidColumn = `Prova${i}_valid`;
 
                     const stepPhotoId = row[stepColumn];
                     const stepPhotoValid = row[stepValidColumn] && row[stepValidColumn].toLowerCase() === 'invalid';
