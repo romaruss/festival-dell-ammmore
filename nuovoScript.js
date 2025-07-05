@@ -57,27 +57,35 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Funzione per ridimensionare l'elemento foto in base alle dimensioni naturali dell'immagine
-    function resizeImage(imgElement, photoItemElement, shortSidePx) {
-        const width = imgElement.naturalWidth;
-        const height = imgElement.naturalHeight;
+    // Funzione per ridimensionare l'elemento foto in base alle dimensioni naturali dell'immagine
+function resizeImage(imgElement, photoItemElement, shortSidePx) {
+    const width = imgElement.naturalWidth;
+    const height = imgElement.naturalHeight;
 
-        if (width === 0 || height === 0) {
-            console.warn('Immagine non caricata o con dimensioni zero:', imgElement.src);
-            return;
-        }
+    console.log(`Resize Image - Immagine: ${imgElement.alt || imgElement.src}, Natural Width: ${width}, Natural Height: ${height}`); // AGGIUNGI QUESTA RIGA
 
-        if (width < height) { // Verticale
-            imgElement.style.width = 'auto';
-            imgElement.style.height = `${shortSidePx}px`;
-            photoItemElement.style.width = `${(shortSidePx / height) * width}px`;
-            photoItemElement.style.height = `${shortSidePx}px`;
-        } else { // Orizzontale o Quadrata
-            imgElement.style.width = `${shortSidePx}px`;
-            imgElement.style.height = 'auto';
-            photoItemElement.style.width = `${shortSidePx}px`;
-            photoItemElement.style.height = `${(shortSidePx / width) * height}px`;
-        }
+    if (width === 0 || height === 0) {
+        console.warn('Immagine non caricata o con dimensioni zero:', imgElement.src);
+        // Potresti voler impostare dimensioni fisse di fallback qui se non si caricano
+        photoItemElement.style.width = `${shortSidePx}px`;
+        photoItemElement.style.height = `${shortSidePx}px`;
+        imgElement.style.width = '100%';
+        imgElement.style.height = '100%';
+        return;
     }
+
+    if (width < height) { // Verticale
+        imgElement.style.width = 'auto';
+        imgElement.style.height = `${shortSidePx}px`;
+        photoItemElement.style.width = `${(shortSidePx / height) * width}px`;
+        photoItemElement.style.height = `${shortSidePx}px`;
+    } else { // Orizzontale o Quadrata
+        imgElement.style.width = `${shortSidePx}px`;
+        imgElement.style.height = 'auto';
+        photoItemElement.style.width = `${shortSidePx}px`;
+        photoItemElement.style.height = `${(shortSidePx / width) * height}px`;
+    }
+}
 
     // Funzione per creare un elemento immagine con overlay
     function createImageElement(fileId, altText, isEliminated, teamName = null, isStepPhoto = false) {
