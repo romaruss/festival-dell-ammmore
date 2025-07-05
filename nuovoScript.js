@@ -1,10 +1,16 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // --- Variabili di configurazione ---
-    const INITIAL_TOP_PANE_HEIGHT_PERCENT = 80;
-    const TEAM_PHOTO_SHORT_SIDE_PX = 170;
-    const STEP_PHOTO_SHORT_SIDE_PX = 150;
-    const CAROUSEL_SPEED_PX_PER_SEC = 50;
-    // ------------------------------------
+    // --- Variabili di configurazione facili da modificare ---
+    const INITIAL_TOP_PANE_HEIGHT_PERCENT = 80; // Altezza iniziale del pannello superiore in percentuale
+    
+    // NUOVE VARIABILI: Dimensioni separate per i lati corti
+    const TEAM_PHOTO_SHORT_SIDE_PX = 170; // Dimensione del lato corto per le foto delle squadre
+    const STEP_PHOTO_SHORT_SIDE_PX = 150; // Dimensione del lato corto per le foto degli step
+
+    const CAROUSEL_SPEED_PX_PER_SEC = 50; // Velocità di scorrimento del carosello in pixel al secondo
+    
+    // NUOVO PARAMETRO: Intervallo di aggiornamento automatico in minuti
+    const AUTO_REFRESH_INTERVAL_MINUTES = 1; // Aggiorna i dati ogni 1 minuto
+    // --------------------------------------------------------
 
     const resizableContainer = document.getElementById('resizableContainer');
     const topPane = document.getElementById('topPane');
@@ -43,10 +49,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Funzione per ottenere l'URL immagine da Google Drive
     function getImageUrl(fileId) {
-        // Puoi aggiungere un fallback o un'immagine predefinita se fileId è nullo/vuoto
         if (!fileId) {
             console.warn('ID del file Google Drive mancante.');
-            return ''; // O un URL di un'immagine segnaposto
+            return ''; 
         }
         return `https://drive.google.com/thumbnail?id=${fileId}&sz=w600-h400`;
     }
@@ -56,7 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const width = imgElement.naturalWidth;
         const height = imgElement.naturalHeight;
 
-        if (width === 0 || height === 0) { // Evita divisione per zero o dimensioni non caricate
+        if (width === 0 || height === 0) {
             console.warn('Immagine non caricata o con dimensioni zero:', imgElement.src);
             return;
         }
@@ -74,7 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Funzione per creare un elemento immagine con overlay (rifattorizzata per riutilizzo)
+    // Funzione per creare un elemento immagine con overlay
     function createImageElement(fileId, altText, isEliminated, teamName = null, isStepPhoto = false) {
         const photoItem = document.createElement('div');
         photoItem.classList.add('photo-item');
@@ -93,8 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
         img.alt = altText;
         img.onerror = () => {
             console.error('Errore caricamento immagine:', img.src);
-            // Puoi aggiungere un'immagine di fallback qui
-            img.src = 'placeholder-error.png'; // Assicurati di avere questa immagine
+            img.src = 'placeholder-error.png'; 
             img.classList.add('error-image');
         };
 
@@ -103,12 +107,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const imgLoadPromise = new Promise((resolve, reject) => {
             img.onload = () => {
                 resizeImage(img, photoItem, currentShortSidePx);
-                resolve(photoItem); // Risolvi la promise con l'elemento una volta caricato
+                resolve(photoItem); 
             };
             img.onerror = (e) => {
                 console.error(`Impossibile caricare l'immagine ${altText} dall'ID: ${fileId}`, e);
-                // Non rigettare la promise, ma risolvila con l'elemento (anche se con errore)
-                // Questo permette a Promise.allSettled di completare tutte le promise
                 resolve(photoItem);
             };
         });
@@ -134,10 +136,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Funzione per calcolare e impostare la durata dell'animazione del carosello
     function setCarouselAnimationDuration() {
-        // La larghezza effettiva di una singola "ripetizione" del carosello
-        // Se duplichi, il carosello.scrollWidth è il doppio della larghezza utile.
         const carouselWidth = stepPhotosCarouselInner.scrollWidth / 2;
-        const duration = carouselWidth / CAROUSEL_SPEED_PX_PER_SEC; // Durata in secondi
+        const duration = carouselWidth / CAROUSEL_SPEED_PX_PER_SEC; 
         stepPhotosCarouselInner.style.setProperty('--scroll-duration', `${duration}s`);
     }
 
@@ -171,7 +171,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Popola il carosello con le foto step valide
-            const stepImageCreationResults = []; // Per tenere traccia degli elementi e delle loro promise
+            const stepImageCreationResults = []; 
             for (const row of data) {
                 for (let i = 2; i <= 4; i++) {
                     const stepId = row[`step${i}`];
@@ -188,11 +188,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             // Attendi che tutte le immagini del carosello siano caricate e ridimensionate
-            // Prima di duplicarle per l'effetto infinito.
             await Promise.allSettled(stepImageCreationResults.map(res => res.promise));
 
             // Ora che le immagini originali sono caricate e dimensionate, le duplico
-            // Per il carosello infinito. Clona solo gli elementi che sono stati effettivamente aggiunti.
             stepImageCreationResults.forEach(result => {
                 if (result.element) {
                     const clonedPhoto = result.element.cloneNode(true);
@@ -216,5 +214,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Carica i dati all'avvio
     loadData();
+
+    // Imposta l'aggiornamento automatico ogni X minuti
+    setInterval(loadData, AUTO_REFRESH_INTERVAL_MINUTES * 60 * 1000); // Converte minuti in millisecondi
 });
