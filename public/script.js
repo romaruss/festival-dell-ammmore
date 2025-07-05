@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const bottomPane = document.getElementById('bottomPane');
     const dragger = document.getElementById('dragger');
     const teamPhotosGrid = document.getElementById('team-photos-grid');
-    const stepPhotosCarouselInner = document.getElementById('step-photos-carousel'); 
+    const stepPhotosCarouselInner = document.getElementById('step-photos-carousel');    
     const stepPhotosCarouselContainer = stepPhotosCarouselInner.parentElement;
 
     // Imposta l'altezza iniziale del pannello superiore
@@ -46,10 +46,18 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.style.cursor = 'default';
     });
 
-    // Funzione per costruire l'URL di Google Drive dall'ID
-    function getGoogleDriveDownloadUrl(fileId) {
-        return `https://drive.google.com/thumbnail?id=${fileId}&sz=w600-h400`;
+    // --- INIZIO MODIFICA QUI ---
+    // Funzione per ottenere l'URL dell'immagine usando il proxy di Vercel
+    function getImageUrl(fileId) {
+        if (!fileId) {
+            console.warn('ID del file Google Drive mancante.');
+            return ''; 
+        }
+        // Usa il tuo nuovo endpoint API proxy su Vercel
+        return `/api/image-proxy?id=${fileId}`; 
     }
+    // --- FINE MODIFICA QUI ---
+
 
     // Funzione HELPER: Per dimensionare l'elemento foto in base alle dimensioni naturali dell'immagine
     // Ora accetta 'shortSidePx' come parametro
@@ -89,7 +97,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const img = document.createElement('img');
-        img.src = getGoogleDriveDownloadUrl(fileId);
+        // --- MODIFICA ANCHE QUI: Chiamata alla nuova funzione getImageUrl ---
+        img.src = getImageUrl(fileId); 
+        // --- FINE MODIFICA ---
         img.alt = alt;
 
         // Determina quale dimensione del lato corto usare
@@ -98,12 +108,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const imgLoadPromise = new Promise((resolve, reject) => {
             img.onload = () => {
                 // Passa la dimensione specifica alla funzione di dimensionamento
-                setPhotoItemDimensions(img, photoItem, currentShortSidePx); 
+                setPhotoItemDimensions(img, photoItem, currentShortSidePx);    
                 resolve(photoItem);
             };
             img.onerror = () => {
                 console.error('Impossibile caricare l\'immagine dall\'ID:', fileId);
-                reject(new Error(`Immagine non caricata: ${fileId}`)); 
+                reject(new Error(`Immagine non caricata: ${fileId}`));    
             };
         });
 
@@ -165,7 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             const stepImageLoadPromises = [];
-            const originalStepPhotoElements = []; 
+            const originalStepPhotoElements = [];    
 
             // Pre-popola il carosello con le foto step valide
             data.forEach(row => {
@@ -176,28 +186,28 @@ document.addEventListener('DOMContentLoaded', () => {
                     const stepPhotoId = row[stepColumn];
                     const stepPhotoValid = row[stepValidColumn] && row[stepValidColumn].toLowerCase() === 'invalid';
 
-                    if (!stepPhotoValid) { 
+                    if (!stepPhotoValid) {    
                         // Passiamo STEP_PHOTO_SHORT_SIDE_PX per le foto step
                         const result = createImageElement(stepPhotoId, `Step ${i} Foto`, false, null, true); // isStepPhoto è true
                         if (result && result.element) {
-                            stepPhotosCarouselInner.appendChild(result.element); 
-                            stepImageLoadPromises.push(result.promise); 
-                            originalStepPhotoElements.push(result.element); 
+                            stepPhotosCarouselInner.appendChild(result.element);    
+                            stepImageLoadPromises.push(result.promise);    
+                            originalStepPhotoElements.push(result.element);    
                         }
                     }
                 }
             });
 
-            await Promise.allSettled(stepImageLoadPromises); 
+            await Promise.allSettled(stepImageLoadPromises);    
 
             originalStepPhotoElements.forEach(photoElement => {
                 if (photoElement) {
-                    const clonedPhoto = photoElement.cloneNode(true); 
+                    const clonedPhoto = photoElement.cloneNode(true);    
                     stepPhotosCarouselInner.appendChild(clonedPhoto);
                 }
             });
 
-            setCarouselAnimationDuration(); 
+            setCarouselAnimationDuration();    
 
             stepPhotosCarouselContainer.addEventListener('mouseenter', () => {
                 stepPhotosCarouselInner.classList.add('paused');
@@ -213,5 +223,4 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     loadSheetData();
-});0
-.
+});
