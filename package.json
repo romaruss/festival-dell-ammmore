@@ -1,15 +1,18 @@
 {
-  "name": "google-sheet-photo-viewer",
+  "name": "festival-dell-ammmore",
   "version": "1.0.0",
-  "description": "Una pagina web per visualizzare foto da Google Drive basate su un Google Sheet.",
-  "main": "server.js",
+  "description": "Un piccolo sito con API per Google Sheets",
+  "main": "api/sheet-data.js",
   "scripts": {
     "start": "node server.js"
   },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
   "dependencies": {
-    "express": "^4.19.2",
-    "axios": "^1.7.2",
-    "dotenv": "^16.4.5"
+    "axios": "^1.7.2", // ASSICURATI CHE SIA QUI
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2"
   },
   "engines": {
     "node": "18.x"
