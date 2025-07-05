@@ -11,7 +11,7 @@ const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 // Il nome del file (`sheet-data.js`) diventa il percorso (`/api/sheet-data`).
 module.exports = async (req, res) => {
   try {
-    const range = 'Foglio1!A:J'; // Specifica il range delle colonne che ti interessano
+    const range = 'Foglio1!A:V'; // Specifica il range delle colonne che ti interessano
     const response = await axios.get(
       `https://sheets.googleapis.com/v4/spreadsheets/${GOOGLE_SHEET_ID}/values/${range}?key=${GOOGLE_API_KEY}`
     );
