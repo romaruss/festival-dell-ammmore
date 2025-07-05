@@ -143,84 +143,91 @@ document.addEventListener('DOMContentLoaded', () => {
         stepPhotosCarouselInner.style.setProperty('--scroll-duration', `${duration}s`);
     }
 
-    // Carica i dati dal backend
-    async function loadSheetData() {
-        try {
-            const response = await fetch('/api/sheet-data');
-            const data = await response.json();
+    // ... (codice precedente) ...
 
-            if (data.error) {
-                console.error('Errore dal server:', data.error);
-                alert('Errore nel caricamento dei dati: ' + data.error);
-                return;
-            }
+// Carica i dati dal backend
+async function loadSheetData() {
+    try {
+        const response = await fetch('/api/sheet-data');
+        const data = await response.json();
 
-            // Pulisci i contenitori prima di aggiungere nuovi elementi (utile per hot reload)
-            teamPhotosGrid.innerHTML = '';
-            stepPhotosCarouselInner.innerHTML = '';
-
-            // Popola il mosaico delle foto squadra (sezione sopra)
-            data.forEach(row => {
-                const fotoSquadraId = row.FotoSquadra;
-                const nomeSquadra = row.NomeSquadra;
-
-                const isInGiocoEliminato = row.InGioco && row.InGioco.toLowerCase();
-                const isEliminated = isInGiocoEliminato === 'eliminato';
-
-                // Passiamo TEAM_PHOTO_SHORT_SIDE_PX per le foto squadra
-                const { element: teamPhotoElement } = createImageElement(fotoSquadraId, nomeSquadra, isEliminated, nomeSquadra, false); // isStepPhoto è false
-                if (teamPhotoElement) {
-                    teamPhotosGrid.appendChild(teamPhotoElement);
-                }
-            });
-
-            const stepImageLoadPromises = [];
-            const originalStepPhotoElements = [];    
-
-            // Pre-popola il carosello con le foto step valide
-            data.forEach(row => {
-                for (let i = 2; i <= 4; i++) {
-                    const stepColumn = `step${i}`;
-                    const stepValidColumn = `step${i}_valid`;
-
-                    const stepPhotoId = row[stepColumn];
-                    const stepPhotoValid = row[stepValidColumn] && row[stepValidColumn].toLowerCase() === 'invalid';
-
-                    if (!stepPhotoValid) {    
-                        // Passiamo STEP_PHOTO_SHORT_SIDE_PX per le foto step
-                        const result = createImageElement(stepPhotoId, `Step ${i} Foto`, false, null, true); // isStepPhoto è true
-                        if (result && result.element) {
-                            stepPhotosCarouselInner.appendChild(result.element);    
-                            stepImageLoadPromises.push(result.promise);    
-                            originalStepPhotoElements.push(result.element);    
-                        }
-                    }
-                }
-            });
-
-            await Promise.allSettled(stepImageLoadPromises);    
-
-            originalStepPhotoElements.forEach(photoElement => {
-                if (photoElement) {
-                    const clonedPhoto = photoElement.cloneNode(true);    
-                    stepPhotosCarouselInner.appendChild(clonedPhoto);
-                }
-            });
-
-            setCarouselAnimationDuration();    
-
-            stepPhotosCarouselContainer.addEventListener('mouseenter', () => {
-                stepPhotosCarouselInner.classList.add('paused');
-            });
-            stepPhotosCarouselContainer.addEventListener('mouseleave', () => {
-                stepPhotosCarouselInner.classList.remove('paused');
-            });
-
-        } catch (error) {
-            console.error('Errore generale durante il caricamento dei dati:', error);
-            alert('Errore nel caricamento dei dati dal server. Controlla la console.');
+        if (data.error) {
+            console.error('Errore dal server:', data.error);
+            alert('Errore nel caricamento dei dati: ' + data.error);
+            return;
         }
+
+        // Pulisci i contenitori prima di aggiungere nuovi elementi (utile per hot reload)
+        teamPhotosGrid.innerHTML = '';
+        stepPhotosCarouselInner.innerHTML = '';
+
+        // Popola il mosaico delle foto squadra (sezione sopra)
+        data.forEach(row => {
+            // --- INIZIO MODIFICA QUI PER FOTO SQUADRA ---
+            const fotoSquadraId = row.ColonnaE; // Usa il nome della colonna per la foto squadra (es. 'ColonnaE')
+            const nomeSquadra = row.NomeSquadra; // Assumendo che 'NomeSquadra' sia ancora il nome della colonna
+            
+            // La colonna "InGioco" è ora la colonna A (quindi 'ColonnaA')
+            const isInGiocoEliminato = row.ColonnaA && row.ColonnaA.toLowerCase(); 
+            const isEliminated = isInGiocoEliminato === 'eliminato';
+            // --- FINE MODIFICA QUI PER FOTO SQUADRA ---
+
+            const { element: teamPhotoElement } = createImageElement(fotoSquadraId, nomeSquadra, isEliminated, nomeSquadra, false);
+            if (teamPhotoElement) {
+                teamPhotosGrid.appendChild(teamPhotoElement);
+            }
+        });
+
+        const stepImageLoadPromises = [];
+        const originalStepPhotoElements = [];    
+
+        // Pre-popola il carosello con le foto step valide
+        data.forEach(row => {
+            // --- INIZIO MODIFICA QUI PER FOTO STEP ---
+            // Hai una sola foto prova (Step 1) nella colonna H con valid in J
+            const stepColumn = 'ColonnaH';      // Colonna H per l'ID della foto della prova
+            const stepValidColumn = 'ColonnaJ'; // Colonna J per la validità della foto della prova
+
+            const stepPhotoId = row[stepColumn];
+            const stepPhotoValid = row[stepValidColumn] && row[stepValidColumn].toLowerCase() === 'invalid';
+
+            if (!stepPhotoValid) {    
+                // Ora creiamo un solo elemento per lo step 1
+                const result = createImageElement(stepPhotoId, `Foto Prova`, false, null, true); // `isStepPhoto` è true
+                if (result && result.element) {
+                    stepPhotosCarouselInner.appendChild(result.element);    
+                    stepImageLoadPromises.push(result.promise);    
+                    originalStepPhotoElements.push(result.element);    
+                }
+            }
+            // --- FINE MODIFICA QUI PER FOTO STEP ---
+        });
+
+        await Promise.allSettled(stepImageLoadPromises);    
+
+        originalStepPhotoElements.forEach(photoElement => {
+            if (photoElement) {
+                const clonedPhoto = photoElement.cloneNode(true);    
+                stepPhotosCarouselInner.appendChild(clonedPhoto);
+            }
+        });
+
+        setCarouselAnimationDuration();    
+
+        stepPhotosCarouselContainer.addEventListener('mouseenter', () => {
+            stepPhotosCarouselInner.classList.add('paused');
+        });
+        stepPhotosCarouselContainer.addEventListener('mouseleave', () => {
+            stepPhotosCarouselInner.classList.remove('paused');
+        });
+
+    } catch (error) {
+        console.error('Errore generale durante il caricamento dei dati:', error);
+        alert('Errore nel caricamento dei dati dal server. Controlla la console.');
     }
+}
+
+// ... (resto del codice) ...
 
     loadSheetData();
 });
