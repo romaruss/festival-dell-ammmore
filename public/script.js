@@ -164,7 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const fotoSquadraId = row.FotoSquadra;
                 const nomeSquadra = row.NomeSquadra;
 
-                const isInGiocoEliminato = row.ColonnaA && row.ColonnaA.toLowerCase();
+                const isInGiocoEliminato = row.InGioco && row.InGioco.toLowerCase();
                 const isEliminated = isInGiocoEliminato === 'eliminato';
 
                 // Passiamo TEAM_PHOTO_SHORT_SIDE_PX per le foto squadra
