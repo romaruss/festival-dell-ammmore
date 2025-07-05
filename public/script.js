@@ -46,21 +46,14 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.style.cursor = 'default';
     });
 
-    // --- INIZIO MODIFICA QUI ---
-    // Funzione per ottenere l'URL dell'immagine usando il proxy di Vercel
     function getImageUrl(fileId) {
         if (!fileId) {
             console.warn('ID del file Google Drive mancante.');
             return ''; 
         }
-        // Usa il tuo nuovo endpoint API proxy su Vercel
         return `/api/image-proxy?id=${fileId}`; 
     }
-    // --- FINE MODIFICA QUI ---
 
-
-    // Funzione HELPER: Per dimensionare l'elemento foto in base alle dimensioni naturali dell'immagine
-    // Ora accetta 'shortSidePx' come parametro
     function setPhotoItemDimensions(imgElement, photoItemElement, shortSidePx) {
         const width = imgElement.naturalWidth;
         const height = imgElement.naturalHeight;
@@ -78,7 +71,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Funzione per creare un elemento immagine con overlay
     function createImageElement(fileId, alt, isInvalid, teamName = null, isStepPhoto = false) {
         if (!fileId) {
             return null;
@@ -97,17 +89,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const img = document.createElement('img');
-        // --- MODIFICA ANCHE QUI: Chiamata alla nuova funzione getImageUrl ---
         img.src = getImageUrl(fileId); 
-        // --- FINE MODIFICA ---
         img.alt = alt;
 
-        // Determina quale dimensione del lato corto usare
         const currentShortSidePx = isStepPhoto ? STEP_PHOTO_SHORT_SIDE_PX : TEAM_PHOTO_SHORT_SIDE_PX;
 
         const imgLoadPromise = new Promise((resolve, reject) => {
             img.onload = () => {
-                // Passa la dimensione specifica alla funzione di dimensionamento
                 setPhotoItemDimensions(img, photoItem, currentShortSidePx);    
                 resolve(photoItem);
             };
@@ -136,14 +124,14 @@ document.addEventListener('DOMContentLoaded', () => {
         return { element: photoItem, promise: imgLoadPromise };
     }
 
-    // Funzione per calcolare la durata dell'animazione in base alla larghezza del carosello e alla velocità desiderata
     function setCarouselAnimationDuration() {
-        const carouselWidth = stepPhotosCarouselInner.scrollWidth / 2; // La larghezza di una singola "ripetizione" del carosello
-        const duration = carouselWidth / CAROUSEL_SPEED_PX_PER_SEC; // Durata in secondi
+        // La logica per il carosello infinito ora dovrà essere riconsiderata
+        // Potrebbe essere necessario modificare anche il CSS per l'animazione
+        const carouselWidth = stepPhotosCarouselInner.scrollWidth; // Usa l'intera larghezza, non la metà
+        const duration = carouselWidth / CAROUSEL_SPEED_PX_PER_SEC; 
         stepPhotosCarouselInner.style.setProperty('--scroll-duration', `${duration}s`);
     }
 
-    // Carica i dati dal backend
     async function loadSheetData() {
         try {
             const response = await fetch('/api/sheet-data');
@@ -155,7 +143,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // Pulisci i contenitori prima di aggiungere nuovi elementi (utile per hot reload)
             teamPhotosGrid.innerHTML = '';
             stepPhotosCarouselInner.innerHTML = '';
 
@@ -167,10 +154,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const isInGiocoEliminato = row.InGioco && row.InGioco.toLowerCase();
                 const isEliminated = isInGiocoEliminato === 'eliminato';
 
-                // Passiamo TEAM_PHOTO_SHORT_SIDE_PX per le foto squadra
-                const { element: teamPhotoElement } = createImageElement(fotoSquadraId, nomeSquadra, isEliminated, nomeSquadra, false); // isStepPhoto è false
-                if (teamPhotoElement) {
-                    teamPhotosGrid.appendChild(teamPhotoElement);
+                const result = createImageElement(fotoSquadraId, nomeSquadra, isEliminated, nomeSquadra, false);
+                if (result && result.element) {
+                    teamPhotosGrid.appendChild(result.element);
+                } else if (result === null) {
+                    console.warn(`Impossibile creare elemento per foto squadra, ID mancante: ${fotoSquadraId || 'Non specificato'}`);
                 }
             });
 
@@ -187,12 +175,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     const stepPhotoValid = row[stepValidColumn] && row[stepValidColumn].toLowerCase() === 'invalid';
 
                     if (!stepPhotoValid) {    
-                        // Passiamo STEP_PHOTO_SHORT_SIDE_PX per le foto step
-                        const result = createImageElement(stepPhotoId, `Step ${i} Foto`, false, null, true); // isStepPhoto è true
+                        const result = createImageElement(stepPhotoId, `Step ${i} Foto`, false, null, true); 
                         if (result && result.element) {
                             stepPhotosCarouselInner.appendChild(result.element);    
                             stepImageLoadPromises.push(result.promise);    
                             originalStepPhotoElements.push(result.element);    
+                        } else if (result === null) {
+                            console.warn(`Impossibile creare elemento per Prova ${i} foto, ID mancante: ${stepPhotoId || 'Non specificato'}`);
                         }
                     }
                 }
@@ -200,12 +189,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
             await Promise.allSettled(stepImageLoadPromises);    
 
-            originalStepPhotoElements.forEach(photoElement => {
-                if (photoElement) {
-                    const clonedPhoto = photoElement.cloneNode(true);    
-                    stepPhotosCarouselInner.appendChild(clonedPhoto);
-                }
-            });
+            // --- INIZIO MODIFICA QUI: Rimuovi il blocco che clona le foto per il carosello infinito ---
+            // originalStepPhotoElements.forEach(photoElement => {
+            //     if (photoElement) {
+            //         const clonedPhoto = photoElement.cloneNode(true);    
+            //         stepPhotosCarouselInner.appendChild(clonedPhoto);
+            //     }
+            // });
+            // --- FINE MODIFICA ---
 
             setCarouselAnimationDuration();    
 
