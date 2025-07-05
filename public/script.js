@@ -7,6 +7,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const STEP_PHOTO_SHORT_SIDE_PX = 150; // Dimensione del lato corto per le foto degli step
 
     const CAROUSEL_SPEED_PX_PER_SEC = 50; // Velocità di scorrimento del carosello in pixel al secondo
+    
+    // NUOVO PARAMETRO: Intervallo di aggiornamento automatico in minuti
+    const AUTO_REFRESH_INTERVAL_MINUTES = 1; // Aggiorna i dati ogni 1 minuto
     // --------------------------------------------------------
 
     const resizableContainer = document.getElementById('resizableContainer');
@@ -14,16 +17,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const bottomPane = document.getElementById('bottomPane');
     const dragger = document.getElementById('dragger');
     const teamPhotosGrid = document.getElementById('team-photos-grid');
-    const stepPhotosCarouselInner = document.getElementById('step-photos-carousel'); 
+    const stepPhotosCarouselInner = document.getElementById('step-photos-carousel');
     const stepPhotosCarouselContainer = stepPhotosCarouselInner.parentElement;
 
-    // Imposta l'altezza iniziale del pannello superiore
+    // Imposta le altezze iniziali
     topPane.style.height = `${INITIAL_TOP_PANE_HEIGHT_PERCENT}%`;
     bottomPane.style.height = `${100 - INITIAL_TOP_PANE_HEIGHT_PERCENT}%`;
 
     let isDragging = false;
 
-    dragger.addEventListener('mousedown', (e) => {
+    dragger.addEventListener('mousedown', () => {
         isDragging = true;
         document.body.style.cursor = 'ns-resize';
     });
@@ -32,13 +35,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!isDragging) return;
 
         const containerRect = resizableContainer.getBoundingClientRect();
-        let newTopPaneHeight = (e.clientY - containerRect.top) / containerRect.height * 100;
+        let newHeightPercent = ((e.clientY - containerRect.top) / containerRect.height) * 100;
+        newHeightPercent = Math.max(10, Math.min(90, newHeightPercent)); // Limita l'altezza
 
-        // Limita l'altezza per evitare che i pannelli scompaiano
-        newTopPaneHeight = Math.max(10, Math.min(90, newTopPaneHeight));
-
-        topPane.style.height = `${newTopPaneHeight}%`;
-        bottomPane.style.height = `${100 - newTopPaneHeight}%`;
+        topPane.style.height = `${newHeightPercent}%`;
+        bottomPane.style.height = `${100 - newHeightPercent}%`;
     });
 
     document.addEventListener('mouseup', () => {
@@ -46,39 +47,52 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.style.cursor = 'default';
     });
 
-    // Funzione per costruire l'URL di Google Drive dall'ID
-    function getGoogleDriveDownloadUrl(fileId) {
-        return `https://drive.google.com/thumbnail?id=${fileId}&sz=w600-h400`;
+// Funzione per ottenere l'URL immagine da Google Drive (ORA USA IL PROXY)
+function getImageUrl(fileId) {
+    if (!fileId) {
+        console.warn('ID del file Google Drive mancante.');
+        return ''; 
+    }
+    // Punta al tuo nuovo endpoint API proxy su Vercel
+    return `/api/image-proxy?id=${fileId}`; 
+}
+
+    // Funzione per ridimensionare l'elemento foto in base alle dimensioni naturali dell'immagine
+    // Funzione per ridimensionare l'elemento foto in base alle dimensioni naturali dell'immagine
+function resizeImage(imgElement, photoItemElement, shortSidePx) {
+    const width = imgElement.naturalWidth;
+    const height = imgElement.naturalHeight;
+
+    console.log(`Resize Image - Immagine: ${imgElement.alt || imgElement.src}, Natural Width: ${width}, Natural Height: ${height}`); // AGGIUNGI QUESTA RIGA
+
+    if (width === 0 || height === 0) {
+        console.warn('Immagine non caricata o con dimensioni zero:', imgElement.src);
+        // Potresti voler impostare dimensioni fisse di fallback qui se non si caricano
+        photoItemElement.style.width = `${shortSidePx}px`;
+        photoItemElement.style.height = `${shortSidePx}px`;
+        imgElement.style.width = '100%';
+        imgElement.style.height = '100%';
+        return;
     }
 
-    // Funzione HELPER: Per dimensionare l'elemento foto in base alle dimensioni naturali dell'immagine
-    // Ora accetta 'shortSidePx' come parametro
-    function setPhotoItemDimensions(imgElement, photoItemElement, shortSidePx) {
-        const width = imgElement.naturalWidth;
-        const height = imgElement.naturalHeight;
-
-        if (width < height) { // Verticale
-            imgElement.style.width = 'auto';
-            imgElement.style.height = `${shortSidePx}px`;
-            photoItemElement.style.width = `${(shortSidePx / height) * width}px`;
-            photoItemElement.style.height = `${shortSidePx}px`;
-        } else { // Orizzontale o Quadrata
-            imgElement.style.width = `${shortSidePx}px`;
-            imgElement.style.height = 'auto';
-            photoItemElement.style.width = `${shortSidePx}px`;
-            photoItemElement.style.height = `${(shortSidePx / width) * height}px`;
-        }
+    if (width < height) { // Verticale
+        imgElement.style.width = 'auto';
+        imgElement.style.height = `${shortSidePx}px`;
+        photoItemElement.style.width = `${(shortSidePx / height) * width}px`;
+        photoItemElement.style.height = `${shortSidePx}px`;
+    } else { // Orizzontale o Quadrata
+        imgElement.style.width = `${shortSidePx}px`;
+        imgElement.style.height = 'auto';
+        photoItemElement.style.width = `${shortSidePx}px`;
+        photoItemElement.style.height = `${(shortSidePx / width) * height}px`;
     }
+}
 
     // Funzione per creare un elemento immagine con overlay
-    function createImageElement(fileId, alt, isInvalid, teamName = null, isStepPhoto = false) {
-        if (!fileId) {
-            return null;
-        }
-
+    function createImageElement(fileId, altText, isEliminated, teamName = null, isStepPhoto = false) {
         const photoItem = document.createElement('div');
         photoItem.classList.add('photo-item');
-        if (isInvalid) {
+        if (isEliminated) {
             photoItem.classList.add('grayscale');
         }
         if (teamName) {
@@ -89,21 +103,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const img = document.createElement('img');
-        img.src = getGoogleDriveDownloadUrl(fileId);
-        img.alt = alt;
+        img.src = getImageUrl(fileId);
+        img.alt = altText;
+        img.onerror = () => {
+            console.error('Errore caricamento immagine:', img.src);
+            img.src = 'placeholder-error.png'; 
+            img.classList.add('error-image');
+        };
 
-        // Determina quale dimensione del lato corto usare
         const currentShortSidePx = isStepPhoto ? STEP_PHOTO_SHORT_SIDE_PX : TEAM_PHOTO_SHORT_SIDE_PX;
 
         const imgLoadPromise = new Promise((resolve, reject) => {
             img.onload = () => {
-                // Passa la dimensione specifica alla funzione di dimensionamento
-                setPhotoItemDimensions(img, photoItem, currentShortSidePx); 
-                resolve(photoItem);
+                resizeImage(img, photoItem, currentShortSidePx);
+                resolve(photoItem); 
             };
-            img.onerror = () => {
-                console.error('Impossibile caricare l\'immagine dall\'ID:', fileId);
-                reject(new Error(`Immagine non caricata: ${fileId}`)); 
+            img.onerror = (e) => {
+                console.error(`Impossibile caricare l'immagine ${altText} dall'ID: ${fileId}`, e);
+                resolve(photoItem);
             };
         });
 
@@ -116,7 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
             photoItem.appendChild(nameOverlay);
         }
 
-        if (isInvalid) {
+        if (isEliminated) {
             const invalidOverlay = document.createElement('div');
             invalidOverlay.classList.add('invalid-overlay');
             invalidOverlay.textContent = 'X';
@@ -126,79 +143,73 @@ document.addEventListener('DOMContentLoaded', () => {
         return { element: photoItem, promise: imgLoadPromise };
     }
 
-    // Funzione per calcolare la durata dell'animazione in base alla larghezza del carosello e alla velocità desiderata
+    // Funzione per calcolare e impostare la durata dell'animazione del carosello
     function setCarouselAnimationDuration() {
-        const carouselWidth = stepPhotosCarouselInner.scrollWidth / 2; // La larghezza di una singola "ripetizione" del carosello
-        const duration = carouselWidth / CAROUSEL_SPEED_PX_PER_SEC; // Durata in secondi
+        const carouselWidth = stepPhotosCarouselInner.scrollWidth / 2;
+        const duration = carouselWidth / CAROUSEL_SPEED_PX_PER_SEC; 
         stepPhotosCarouselInner.style.setProperty('--scroll-duration', `${duration}s`);
     }
 
-    // Carica i dati dal backend
-    async function loadSheetData() {
+    // Caricamento dati dal backend e popolamento UI
+    async function loadData() {
         try {
             const response = await fetch('/api/sheet-data');
             const data = await response.json();
 
             if (data.error) {
-                console.error('Errore dal server:', data.error);
-                alert('Errore nel caricamento dei dati: ' + data.error);
+                alert('Errore caricamento dati: ' + data.error);
                 return;
             }
 
-            // Pulisci i contenitori prima di aggiungere nuovi elementi (utile per hot reload)
+            // Pulisco contenitori prima di aggiungere nuovi elementi
             teamPhotosGrid.innerHTML = '';
             stepPhotosCarouselInner.innerHTML = '';
 
-            // Popola il mosaico delle foto squadra (sezione sopra)
-            data.forEach(row => {
-                const fotoSquadraId = row.FotoSquadra;
-                const nomeSquadra = row.NomeSquadra;
+            // Popola il mosaico delle foto squadra (sezione superiore)
+            for (const row of data) {
+                const photoId = row.FotoSquadra;
+                const teamName = row.NomeSquadra;
+                const isEliminated = row.InGioco && row.InGioco.toLowerCase() === 'eliminato';
 
-                const isInGiocoEliminato = row.InGioco && row.InGioco.toLowerCase();
-                const isEliminated = isInGiocoEliminato === 'eliminato';
+                if (!photoId) continue;
 
-                // Passiamo TEAM_PHOTO_SHORT_SIDE_PX per le foto squadra
-                const { element: teamPhotoElement } = createImageElement(fotoSquadraId, nomeSquadra, isEliminated, nomeSquadra, false); // isStepPhoto è false
+                const { element: teamPhotoElement } = createImageElement(photoId, teamName, isEliminated, teamName, false);
                 if (teamPhotoElement) {
                     teamPhotosGrid.appendChild(teamPhotoElement);
                 }
-            });
+            }
 
-            const stepImageLoadPromises = [];
-            const originalStepPhotoElements = []; 
-
-            // Pre-popola il carosello con le foto step valide
-            data.forEach(row => {
+            // Popola il carosello con le foto step valide
+            const stepImageCreationResults = []; 
+            for (const row of data) {
                 for (let i = 2; i <= 4; i++) {
-                    const stepColumn = `step${i}`;
-                    const stepValidColumn = `step${i}_valid`;
+                    const stepId = row[`step${i}`];
+                    const stepValid = row[`step${i}_valid`] && row[`step${i}_valid`].toLowerCase() === 'invalid';
 
-                    const stepPhotoId = row[stepColumn];
-                    const stepPhotoValid = row[stepValidColumn] && row[stepValidColumn].toLowerCase() === 'invalid';
+                    if (!stepId || stepValid) continue;
 
-                    if (!stepPhotoValid) { 
-                        // Passiamo STEP_PHOTO_SHORT_SIDE_PX per le foto step
-                        const result = createImageElement(stepPhotoId, `Step ${i} Foto`, false, null, true); // isStepPhoto è true
-                        if (result && result.element) {
-                            stepPhotosCarouselInner.appendChild(result.element); 
-                            stepImageLoadPromises.push(result.promise); 
-                            originalStepPhotoElements.push(result.element); 
-                        }
+                    const result = createImageElement(stepId, `Step ${i} Foto`, false, null, true);
+                    if (result && result.element) {
+                        stepPhotosCarouselInner.appendChild(result.element);
+                        stepImageCreationResults.push(result);
                     }
                 }
-            });
+            }
+            
+            // Attendi che tutte le immagini del carosello siano caricate e ridimensionate
+            await Promise.allSettled(stepImageCreationResults.map(res => res.promise));
 
-            await Promise.allSettled(stepImageLoadPromises); 
-
-            originalStepPhotoElements.forEach(photoElement => {
-                if (photoElement) {
-                    const clonedPhoto = photoElement.cloneNode(true); 
+            // Ora che le immagini originali sono caricate e dimensionate, le duplico
+            stepImageCreationResults.forEach(result => {
+                if (result.element) {
+                    const clonedPhoto = result.element.cloneNode(true);
                     stepPhotosCarouselInner.appendChild(clonedPhoto);
                 }
             });
 
-            setCarouselAnimationDuration(); 
+            setCarouselAnimationDuration();
 
+            // Pausa animazione al passaggio mouse
             stepPhotosCarouselContainer.addEventListener('mouseenter', () => {
                 stepPhotosCarouselInner.classList.add('paused');
             });
@@ -206,11 +217,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 stepPhotosCarouselInner.classList.remove('paused');
             });
 
-        } catch (error) {
-            console.error('Errore generale durante il caricamento dei dati:', error);
-            alert('Errore nel caricamento dei dati dal server. Controlla la console.');
+        } catch (err) {
+            alert('Errore caricamento dati dal server. Controlla console.');
+            console.error('Errore durante il caricamento o la manipolazione dei dati:', err);
         }
     }
 
-    loadSheetData();
+    // Carica i dati all'avvio
+    loadData();
+
+    // Imposta l'aggiornamento automatico ogni X minuti
+    setInterval(loadData, AUTO_REFRESH_INTERVAL_MINUTES * 60 * 1000); // Converte minuti in millisecondi
 });
