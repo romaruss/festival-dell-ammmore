@@ -180,8 +180,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Pre-popola il carosello con le foto step valide
             data.forEach(row => {
                 for (let i = 2; i <= 4; i++) {
-                    const stepColumn = `step${i}`;
-                    const stepValidColumn = `step${i}_valid`;
+                    const stepColumn = `Prova{i}`;
+                    const stepValidColumn = `Prova{i}_valid`;
 
                     const stepPhotoId = row[stepColumn];
                     const stepPhotoValid = row[stepValidColumn] && row[stepValidColumn].toLowerCase() === 'invalid';
