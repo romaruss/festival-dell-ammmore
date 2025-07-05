@@ -47,14 +47,15 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.style.cursor = 'default';
     });
 
-    // Funzione per ottenere l'URL immagine da Google Drive
-    function getImageUrl(fileId) {
-        if (!fileId) {
-            console.warn('ID del file Google Drive mancante.');
-            return ''; 
-        }
-        return `https://drive.google.com/thumbnail?id=${fileId}&sz=w600-h400`;
+// Funzione per ottenere l'URL immagine da Google Drive (ORA USA IL PROXY)
+function getImageUrl(fileId) {
+    if (!fileId) {
+        console.warn('ID del file Google Drive mancante.');
+        return ''; 
     }
+    // Punta al tuo nuovo endpoint API proxy su Vercel
+    return `/api/image-proxy?id=${fileId}`; 
+}
 
     // Funzione per ridimensionare l'elemento foto in base alle dimensioni naturali dell'immagine
     // Funzione per ridimensionare l'elemento foto in base alle dimensioni naturali dell'immagine
