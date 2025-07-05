@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const bottomPane = document.getElementById('bottomPane');
     const dragger = document.getElementById('dragger');
     const teamPhotosGrid = document.getElementById('team-photos-grid');
-    const stepPhotosCarouselInner = document.getElementById('step-photos-carousel');    
+    const stepPhotosCarouselInner = document.getElementById('step-photos-carousel'); 
     const stepPhotosCarouselContainer = stepPhotosCarouselInner.parentElement;
 
     // Imposta l'altezza iniziale del pannello superiore
@@ -46,16 +46,13 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.style.cursor = 'default';
     });
 
-    // Funzione per ottenere l'URL dell'immagine usando il proxy di Vercel
-    function getImageUrl(fileId) {
-        if (!fileId) {
-            console.warn('ID del file Google Drive mancante.');
-            return ''; 
-        }
-        return `/api/image-proxy?id=${fileId}`; 
+    // Funzione per costruire l'URL di Google Drive dall'ID
+    function getGoogleDriveDownloadUrl(fileId) {
+        return `https://drive.google.com/thumbnail?id=${fileId}&sz=w600-h400`;
     }
 
     // Funzione HELPER: Per dimensionare l'elemento foto in base alle dimensioni naturali dell'immagine
+    // Ora accetta 'shortSidePx' come parametro
     function setPhotoItemDimensions(imgElement, photoItemElement, shortSidePx) {
         const width = imgElement.naturalWidth;
         const height = imgElement.naturalHeight;
@@ -76,7 +73,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Funzione per creare un elemento immagine con overlay
     function createImageElement(fileId, alt, isInvalid, teamName = null, isStepPhoto = false) {
         if (!fileId) {
-            console.warn('createImageElement: fileId mancante, non creo l\'elemento.');
             return null;
         }
 
@@ -93,19 +89,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const img = document.createElement('img');
-        img.src = getImageUrl(fileId); 
+        img.src = getGoogleDriveDownloadUrl(fileId);
         img.alt = alt;
 
+        // Determina quale dimensione del lato corto usare
         const currentShortSidePx = isStepPhoto ? STEP_PHOTO_SHORT_SIDE_PX : TEAM_PHOTO_SHORT_SIDE_PX;
 
         const imgLoadPromise = new Promise((resolve, reject) => {
             img.onload = () => {
-                setPhotoItemDimensions(img, photoItem, currentShortSidePx);    
+                // Passa la dimensione specifica alla funzione di dimensionamento
+                setPhotoItemDimensions(img, photoItem, currentShortSidePx); 
                 resolve(photoItem);
             };
             img.onerror = () => {
                 console.error('Impossibile caricare l\'immagine dall\'ID:', fileId);
-                reject(new Error(`Immagine non caricata: ${fileId}`));    
+                reject(new Error(`Immagine non caricata: ${fileId}`)); 
             };
         });
 
@@ -147,55 +145,59 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            // Pulisci i contenitori prima di aggiungere nuovi elementi (utile per hot reload)
             teamPhotosGrid.innerHTML = '';
             stepPhotosCarouselInner.innerHTML = '';
 
             // Popola il mosaico delle foto squadra (sezione sopra)
             data.forEach(row => {
-                // Modificato per usare le colonne A ed E
-                const fotoSquadraId = row.ColonnaE; 
-                const nomeSquadra = row.NomeSquadra; // Mantieni se il nome colonna è 'NomeSquadra'
+                const fotoSquadraId = row.FotoSquadra;
+                const nomeSquadra = row.NomeSquadra;
 
-                const isInGiocoEliminato = row.ColonnaA && row.ColonnaA.toLowerCase(); 
+                const isInGiocoEliminato = row.InGioco && row.InGioco.toLowerCase();
                 const isEliminated = isInGiocoEliminato === 'eliminato';
 
-                const { element: teamPhotoElement } = createImageElement(fotoSquadraId, nomeSquadra, isEliminated, nomeSquadra, false);
+                // Passiamo TEAM_PHOTO_SHORT_SIDE_PX per le foto squadra
+                const { element: teamPhotoElement } = createImageElement(fotoSquadraId, nomeSquadra, isEliminated, nomeSquadra, false); // isStepPhoto è false
                 if (teamPhotoElement) {
                     teamPhotosGrid.appendChild(teamPhotoElement);
                 }
             });
 
             const stepImageLoadPromises = [];
-            const originalStepPhotoElements = [];    
+            const originalStepPhotoElements = []; 
 
-            // Popola il carosello con la singola foto prova (colonne H e J)
+            // Pre-popola il carosello con le foto step valide
             data.forEach(row => {
-                const stepColumn = 'ColonnaH';      
-                const stepValidColumn = 'ColonnaJ'; 
+                for (let i = 2; i <= 4; i++) {
+                    const stepColumn = `step${i}`;
+                    const stepValidColumn = `step${i}_valid`;
 
-                const stepPhotoId = row[stepColumn];
-                const stepPhotoValid = row[stepValidColumn] && row[stepValidColumn].toLowerCase() === 'invalid';
+                    const stepPhotoId = row[stepColumn];
+                    const stepPhotoValid = row[stepValidColumn] && row[stepValidColumn].toLowerCase() === 'invalid';
 
-                if (!stepPhotoValid) {    
-                    const result = createImageElement(stepPhotoId, `Foto Prova`, false, null, true); 
-                    if (result && result.element) {
-                        stepPhotosCarouselInner.appendChild(result.element);    
-                        stepImageLoadPromises.push(result.promise);    
-                        originalStepPhotoElements.push(result.element);    
+                    if (!stepPhotoValid) { 
+                        // Passiamo STEP_PHOTO_SHORT_SIDE_PX per le foto step
+                        const result = createImageElement(stepPhotoId, `Step ${i} Foto`, false, null, true); // isStepPhoto è true
+                        if (result && result.element) {
+                            stepPhotosCarouselInner.appendChild(result.element); 
+                            stepImageLoadPromises.push(result.promise); 
+                            originalStepPhotoElements.push(result.element); 
+                        }
                     }
                 }
             });
 
-            await Promise.allSettled(stepImageLoadPromises);    
+            await Promise.allSettled(stepImageLoadPromises); 
 
             originalStepPhotoElements.forEach(photoElement => {
                 if (photoElement) {
-                    const clonedPhoto = photoElement.cloneNode(true);    
+                    const clonedPhoto = photoElement.cloneNode(true); 
                     stepPhotosCarouselInner.appendChild(clonedPhoto);
                 }
             });
 
-            setCarouselAnimationDuration();    
+            setCarouselAnimationDuration(); 
 
             stepPhotosCarouselContainer.addEventListener('mouseenter', () => {
                 stepPhotosCarouselInner.classList.add('paused');
@@ -211,4 +213,5 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     loadSheetData();
-});
+});0
+.
